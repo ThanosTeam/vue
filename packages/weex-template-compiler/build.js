@@ -1203,6 +1203,7 @@ function createASTElement (
     tag: tag,
     attrsList: attrs,
     attrsMap: makeAttrsMap(attrs),
+    datasetMap: makeDataSetMap(attrs),
     rawAttrsMap: {},
     parent: parent,
     children: []
@@ -2056,6 +2057,26 @@ function makeAttrsMap (attrs) {
     map[attrs[i].name] = attrs[i].value;
   }
   return map
+}
+
+function makeDataSetMap (attrs) {
+  var map = {};
+
+  for (var i = 0; i < attrs.length; i++) {
+    var attrName = attrs[i].name;
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      map[attrName] && !isIE && !isEdge
+    ) {
+      warn('duplicate attribute: ' + attrName);
+    }
+
+    if (attrName.indexOf('data-') !== -1) {
+      var dataSetName = attrName.substring(attrName.indexOf('data-') + 5)
+      map[dataSetName] = attrs[i].value;
+    }
+  }
+  return map;
 }
 
 // for script (e.g. type="x/template") or style, do not decode content
@@ -3537,6 +3558,9 @@ function genData (el, state) {
   if (el.attrs) {
     data += "attrs:" + (genProps(el.attrs)) + ",";
   }
+  if (el.datasetMap) {
+    data += "dataset:{" + (genObjectProps(el.datasetMap)) + "},";
+  }
   // DOM props
   if (el.props) {
     data += "domProps:" + (genProps(el.props)) + ",";
@@ -3858,6 +3882,17 @@ function genProps (props) {
   } else {
     return staticProps
   }
+}
+
+function genObjectProps(object) {
+  var res = '';
+  var keys = Object.keys(object)
+  for (var i = 0; i < keys.length; i++) {
+    {
+      res += "\"" + (keys[i]) + "\":" + (object[keys[i]]) + ",";
+    }
+  }
+  return res.slice(0, -1)
 }
 
 /* istanbul ignore next */
